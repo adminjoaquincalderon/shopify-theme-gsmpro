@@ -1,0 +1,5 @@
+{% section 'cart-template' %}
+{% include 'cross-sell' %}
+{%- if cart.item_count > 0 -%}
+  {% section 'static-recently-viewed-products' %}
+{%- endif -%}

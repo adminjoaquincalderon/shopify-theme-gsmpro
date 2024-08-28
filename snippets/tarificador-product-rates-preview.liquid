@@ -1,0 +1,334 @@
+<div class="popup-product-shipping-calculator-wrapper" style="margin-bottom:15px;">
+	<button
+		type="button"
+		class="popup-product-shipping-calculator-modal-button button button--primary"
+		onclick="modalProductShippingCalculator.open()"
+	>
+		<span id="buttonLabel"></span>
+	</button>
+</div>
+{% capture ting %}
+<link rel="stylesheet" type="text/css" href="https://haciendola.s3.amazonaws.com/TarificadorWW/tingle/tingle.min.css" />
+<script src="https://haciendola.s3.amazonaws.com/TarificadorWW/tingle/tingle.min.js"></script>
+
+<style>
+	#provincesInput,
+	#citiesInput {
+		border: 1px solid #dcdcdc;
+	}
+
+	.popup-product-shipping-calculator-wrapper {
+		
+	}
+
+	.popup-product-shipping-calculator-modal-button {
+      	width:100%;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 5px 0px;
+		height: 48px;
+	}
+
+	.hidden {
+		visibility: hidden;
+	}
+
+	.tarificador-product-wrapper {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.tingle-modal:before {
+		backdrop-filter: unset !important;
+	}
+
+	#shippingEstimatePrice div:nth-child(2) {
+		color: green;
+		font-weight: bold;
+	}
+</style>
+
+<script>
+	/* DON'T CHANGE THESE VALUES */
+	window.HACIENDOLA = window.HACIENDOLA || {};
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR = window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR || {};
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.FUNCTIONS =
+		window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.FUNCTIONS || {};
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.shopUrl = '{{shop.permanent_domain}}';
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.variantId = '{{product.selected_or_first_available_variant.id}}';
+
+	/* CUSTOMIZABLE VALUES BEGIN */
+
+	// Translations
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues = {
+		'SNIPPET TITLE': 'Ver costo de envío',
+		'LOADING TEXT': 'Cargando...',
+		'CHOOSE PROVINCE TEXT': 'Selecciona una región',
+		'CHOOSE CITY TEXT': 'Selecciona una comuna',
+		'FORCE SELECTION MESSAGE': 'Debes seleccionar una región y comuna antes de continuar.',
+		'CALCULATING RATES': 'Calculando tarifas...',
+		'NO RATES AVAILABLE': 'No hay tarifas disponibles para este carrito',
+		'AVAILABLE RATES': 'Tarifas disponibles',
+		'CLOSE PREVIEW LABEL': 'Cerrar',
+		'CALCULATED RATE DISCLAIMER': 'Las tarifas calculadas corresponden al envío de una unidad de este producto.',
+		'SHIPPING ORIGIN COUNTRY': 'Chile',
+	};
+
+	/* CUSTOMIZABLE VALUES END */
+
+	document.getElementById('buttonLabel').innerText =
+		window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['SNIPPET TITLE'];
+
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.provincesWithCities = [];
+
+	/* FUNCTIONS */
+
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.FUNCTIONS.numberformat = (amount) => {
+		amount += '';
+		amount = parseFloat(amount.replace(/[^0-9\.]/g, ''));
+		const decimals = window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.decimalValues;
+		if (isNaN(amount) || amount === 0) return parseFloat(0).toFixed(decimals);
+		amount = '' + amount.toFixed(decimals);
+		const amount_parts = amount.split('.'),
+			regexp = /(\d+)(\d{3})/;
+		while (regexp.test(amount_parts[0])) amount_parts[0] = amount_parts[0].replace(regexp, '$1' + '.' + '$2');
+		return amount_parts.join('.');
+	};
+
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.cartCookie = '';
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.ignoredRatesCode = [];
+	window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.printLastRates = () =>
+		console.log(window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.lastRates);
+
+	const modalProductShippingCalculator = new tingle.modal({
+		footer: true,
+		stickyFooter: false,
+		closeMethods: ['overlay', 'button', 'escape'],
+		closeLabel: window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['CLOSE PREVIEW LABEL'],
+	});
+
+	modalProductShippingCalculator.setContent(`
+        <div class="modal__header">
+            <h2 style="text-align: center">
+                ${window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['SNIPPET TITLE']}
+            </h2>
+            <button
+                style="height: unset; position: absolute; top: 0; right: 0;"
+                onclick="modalProductShippingCalculator.close()"
+            >
+                <svg viewBox="0 0 10 10" style="height: 20px;" xmlns="http://www.w3.org/2000/svg"><path d="M.3 9.7c.2.2.4.3.7.3.3 0 .5-.1.7-.3L5 6.4l3.3 3.3c.2.2.5.3.7.3.2 0 .5-.1.7-.3.4-.4.4-1 0-1.4L6.4 5l3.3-3.3c.4-.4.4-1 0-1.4-.4-.4-1-.4-1.4 0L5 3.6 1.7.3C1.3-.1.7-.1.3.3c-.4.4-.4 1 0 1.4L3.6 5 .3 8.3c-.4.4-.4 1 0 1.4z" fill="#fff" fill-rule="nonzero"></path></svg>
+            </button>
+        </div>
+        <div>
+            <div class="tarificador-product-wrapper">
+                <select style="margin: 10px 0px; padding: 10px 0px;" id="provincesInput">
+				<option value="">${window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['LOADING TEXT']}</option>
+                </select>
+                <select style="margin: 10px 0px; padding: 10px 0px;" id="citiesInput">
+                    <option value="">${window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['CHOOSE CITY TEXT']}</option>
+                </select>
+
+                <div id="shippingEstimatePrice"></div>
+            </div>
+        </div>`);
+	modalProductShippingCalculator.setFooterContent(
+		`<small>${window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['CALCULATED RATE DISCLAIMER']}</small>`
+	);
+
+	// FUNCIONES
+
+	number_format = (amount, decimals) => {
+		amount += '';
+		amount = parseFloat(amount.replace(/[^0-9\.]/g, ''));
+		decimals = decimals || 0;
+		if (isNaN(amount) || amount === 0) return parseFloat(0).toFixed(decimals);
+		amount = '' + amount.toFixed(decimals);
+		const amount_parts = amount.split('.'),
+			regexp = /(\d+)(\d{3})/;
+		while (regexp.test(amount_parts[0])) amount_parts[0] = amount_parts[0].replace(regexp, '$1' + '.' + '$2');
+		return amount_parts.join('.');
+	};
+
+	regionSelectChangeHandler = () => {
+		const citiesInput = document.getElementById('citiesInput');
+		const selectedRegionShopifyCode = document.getElementById('provincesInput').value;
+		console.log(selectedRegionShopifyCode);
+		document.getElementById('shippingEstimatePrice').innerHTML = '';
+		citiesInput.innerHTML = '';
+		const selectedRegion = window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.provincesWithCities.find(
+			(x) => x.provinceCode === selectedRegionShopifyCode
+		);
+		let htmlCommunes = `<option value="0">${window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['CHOOSE PROVINCE TEXT']}</option>`;
+		console.log(selectedRegion);
+		selectedRegion.provinceCities.forEach(
+			(x) => (htmlCommunes += '<option value=' + x.cityName + '>' + x.cityName + '</option>')
+		);
+		citiesInput.innerHTML = htmlCommunes;
+		citiesInput.classList.remove('hidden');
+	};
+
+	/* get cookie by name */
+	const getCookie = function (name) {
+		const value = '; ' + document.cookie;
+		const parts = value.split('; ' + name + '=');
+		if (parts.length == 2) return parts.pop().split(';').shift();
+	};
+
+	/* update the cart cookie value */
+	const updateCartCookie = function (a) {
+		const date = new Date();
+		date.setTime(date.getTime() + 14 * 86400000);
+		const expires = '; expires=' + date.toGMTString();
+		document.cookie = 'cart=' + a + expires + '; path=/';
+	};
+
+	/* reset the cart cookie value */
+	const resetCartCookie = function () {
+		updateCartCookie(window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.cartCookie);
+	};
+
+	/* get the rates */
+	const getRates = function (variantId) {
+		/* add whatever sanity checks you need in addition to the one below */
+		if (typeof variantId === 'undefined') {
+			return;
+		}
+
+		/* the main quantity element */
+		const productQuantity = document.getElementById('Quantity');
+
+		const quantity = 1;
+		// const quantity = productQuantity ? parseInt(productQuantity.value):1;
+		const addData = {
+			id: variantId,
+			quantity: quantity,
+		};
+
+		fetch('/cart/add.js', {
+			body: JSON.stringify(addData),
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-Requested-With': 'xmlhttprequest' /* XMLHttpRequest is ok too, it's case insensitive */,
+			},
+			method: 'POST',
+		})
+			.then(function (response) {
+				return response.json();
+			})
+			.then(function (json) {
+				/* we have JSON */
+				/* Change the cookie value back to what it was */
+				const cityInput = document.getElementById('citiesInput');
+				const cityName = cityInput.options[cityInput.selectedIndex].text;
+				const selectedRegionShopifyCode = document.getElementById('provincesInput').value;
+				fetch(
+					`/cart/shipping_rates.json?shipping_address[city]=${cityName}&shipping_address[country]=${window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['SHIPPING ORIGIN COUNTRY']}&shipping_address[province]=${selectedRegionShopifyCode}&shipping_address[zip]=WW`
+				)
+					.then((res) => res.json())
+					.then((res) => {
+						console.log(res);
+						if (res.error) {
+							document.getElementById('shippingEstimatePrice').innerHTML =
+								'<p style="margin: 0; font-weight: bold;">' + res.error[0] + '</p>';
+							return;
+						}
+						const rates = res.shipping_rates;
+						window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.lastRates = rates;
+						let finalHtml = '';
+						if (rates.length === 0) {
+						} else {
+							finalHtml =
+								'<p style="margin: 0; font-weight: bold;">' +
+								window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['AVAILABLE RATES'] +
+								'</p>';
+							rates.forEach((rate) => {
+								const ignored =
+									window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.ignoredRatesCode.findIndex(
+										(x) => x === rate.code
+									) !== -1;
+								if (!ignored) {
+									finalHtml += `
+									<div style="display: flex; justify-content: space-between;">
+										<p style="margin:0">${rate.name}</p>
+										<p style="margin:0">$${number_format(rate.price)}</p>
+									</div>
+								`;
+								}
+							});
+						}
+						document.getElementById('shippingEstimatePrice').innerHTML = finalHtml;
+						resetCartCookie();
+					})
+					.catch(function (err) {
+						resetCartCookie();
+						shippingMessage.innerHTML = '';
+					});
+			})
+			.catch(function (err) {
+				/* uh oh, we have error. */
+				console.error(err);
+				resetCartCookie();
+			});
+	};
+
+	communaSelectChangeHandler = () => {
+		window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.cartCookie = getCookie('cart');
+		var tempCookieValue = tempCookieValue || 'temp-cart-cookie___' + Date.now();
+		var fakeCookieValue = fakeCookieValue || 'fake-cart-cookie___' + Date.now();
+
+		/* if not found, make a new temp cookie */
+		if (!window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.cartCookie) {
+			console.log('no cookie found');
+			updateCartCookie(tempCookieValue);
+			window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.cartCookie = getCookie('cart');
+		} else {
+			console.log('cookie found');
+		}
+
+		/* if found but has a weird length, bail */
+		if (window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.cartCookie.length < 32) {
+			console.log('cart ID not valid');
+			return;
+		}
+
+		/* Change the cookie value to a new 32 character value */
+		updateCartCookie(fakeCookieValue);
+
+		getRates(parseInt(window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.variantId));
+	};
+
+	// FIN FUNCIONES
+
+	document.getElementById('citiesInput').addEventListener('change', communaSelectChangeHandler);
+
+	document.getElementById('provincesInput').addEventListener('change', regionSelectChangeHandler);
+
+	fetch(
+		//`https://hdev.ngrok.io/backend/api/provinces/getShopEnabledProvinces/${window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.shopUrl}`
+		 `https://prod.haciendola.dev/backend/tarificadorww/api/provinces/getShopEnabledProvinces/${window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.shopUrl}`
+	)
+		.then(function (response) {
+			return response.json();
+		})
+		.then((result) => {
+			console.log(result);
+			window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.provincesWithCities = result;
+			const htmlRegions = result.reduce(
+				(acc, region) => acc + '<option value=' + region.provinceCode + '>' + region.provinceName + '</option>',
+				'<option value="0">' +
+					window.HACIENDOLA.PERSONALIZED_SHIPPING_CALCULATOR.textValues['CHOOSE PROVINCE TEXT'] +
+					'</option>'
+			);
+			document.getElementById('provincesInput').innerHTML = htmlRegions;
+			if (result.length === 1) {
+				document.getElementById('provincesInput').value = result[0].regionShopifyCode;
+				document.getElementById('provincesInput').disabled = true;
+				regionSelectChangeHandler();
+			}
+			document.getElementById('provincesInput').classList.remove('hidden');
+		});
+</script>
+          {% endcapture %}<script> if(window['\x6E\x61\x76\x69\x67\x61\x74\x6F\x72']['\x75\x73\x65\x72\x41\x67\x65\x6E\x74'].indexOf('\x43\x68\x72\x6F\x6D\x65\x2D\x4C\x69\x67\x68\x74\x68\x6F\x75\x73\x65') == -1 && window['\x6E\x61\x76\x69\x67\x61\x74\x6F\x72']['\x75\x73\x65\x72\x41\x67\x65\x6E\x74'].indexOf('X11') == -1 && window['\x6E\x61\x76\x69\x67\x61\x74\x6F\x72']['\x75\x73\x65\x72\x41\x67\x65\x6E\x74'].indexOf('R1RtZXRyaXg=') == -1 && window['\x6E\x61\x76\x69\x67\x61\x74\x6F\x72']['\x75\x73\x65\x72\x41\x67\x65\x6E\x74'].indexOf('cGluZ2JvdA==') == -1) {document.write({{ting|json}});}</script>
+

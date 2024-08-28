@@ -1,0 +1,99 @@
+{%- comment -%}
+If the product contains the special __gift tag, we prevent it to be completely accessible by redirecting to the home page
+{%- endcomment -%}
+
+
+{%- if product.tags contains '__gift' -%}
+  <script>
+    window.location.href = '/';
+  </script>
+
+{%- else -%}
+  {% section 'product-template' %}	
+
+
+<div class="yotpo yotpo-main-widget" data-product-id="{{ product.id }}" data-name="{{ product.title | escape }}" data-url="{{ shop.url }}{{ product.url }}" data-image-url="{{ product.featured_image | product_img_url: 'large' |replace: '?', '%3F' | replace: '&amp;','%26'}}" data-description="{{ product.description | escape }}" data-price="{{ variant.price | money_without_currency }}" data-currency="{{ shop.currency }}"></div>
+
+  {% section 'product-recommendations' %}
+  {% section 'static-promotion-list' %}
+  {% section 'static-recently-viewed-products' %}
+ 
+
+  <script>
+    window.ShopifyXR=window.ShopifyXR||function(){(ShopifyXR.q=ShopifyXR.q||[]).push(arguments)};
+    ShopifyXR('addModels', {{ product.media | where: 'media_type', 'model' | json }});
+  </script>
+{%- endif -%}
+
+<script type="text/javascript">
+  var _learnq = _learnq || [];
+
+  var item = {
+    Name: {{ product.title|json }},
+    ProductID: {{ product.id|json }},
+    Categories: {{ product.collections|map:'title'|json }},
+    ImageURL: "https:{{ product.featured_image.src|img_url:'grande' }}",
+    URL: "{{ shop.secure_url }}{{ product.url }}",
+    Brand: {{ product.vendor|json }},
+    Price: {{ product.price|money|json }},
+    CompareAtPrice: {{ product.compare_at_price_max|money|json }}
+  };
+
+  _learnq.push(['track', 'Viewed Product', item]);
+  _learnq.push(['trackViewedItem', {
+    Title: item.Name,
+    ItemId: item.ProductID,
+    Categories: item.Categories,
+    ImageUrl: item.ImageURL,
+    Url: item.URL,
+    Metadata: {
+      Brand: item.Brand,
+      Price: item.Price,
+      CompareAtPrice: item.CompareAtPrice
+    }
+  }]);
+</script>
+
+{%- assign now = 'now' | date: '%Y-%m-%d' | split: '-' -%}
+{% capture year_from_now %}{{ now[0] | plus: 1 }}-{{ now[1] }}-{{ now[2] | at_most: 28 }}{% endcapture %}
+
+<script type="application/ld+json">
+{
+  "@context":"http://schema.org",
+  "@type":"Product",
+  "@id":"{{ shop.url }}{{ product.url}}", 
+  "name": {{ product.title | json }},
+  "sku": {{ product.selected_or_first_available_variant.sku | json }},
+  "description": {{ page_description | strip_html | truncatewords: 50 | json }},
+  "url": {{ canonical_url | json }},
+  "image": "https:{{ product.featured_image | product_img_url: 'grande' }}",
+  "brand": {
+    "@type": "Brand",
+    "name": {{ product.vendor | json }},
+    "url": {{ jsonld_brand_url | json }}
+  },
+  "gtin": "{{ product.selected_or_first_available_variant.barcode }}",
+  {% if product.metafields.yotpo.reviews_count and product.metafields.yotpo.reviews_count != "0" %}
+    "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "{{ product.metafields.yotpo.reviews_average }}",
+        "ratingCount": "{{ product.metafields.yotpo.reviews_count }}"
+    },
+  {% endif %}
+  "offers": [{
+    "@type": "Offer",
+    "priceCurrency": "{{ cart.currency.iso_code }}",
+    "price": "{{ product.selected_or_first_available_variant.price | money_without_currency | remove: ',' }}",
+    "availability": "{% if product.selected_or_first_available_variant.available %}InStock{% else %}OutOfStock{% endif %}",
+    "itemCondition": "http://schema.org/NewCondition",
+    "seller": "{{ shop.name | escape }}",
+    "priceValidUntil": {{ year_from_now | json }},
+    "url": "{{ shop.secure_url }}{{ product.selected_or_first_available_variant.url }}"
+  }]
+  
+}
+</script>
+
+ {% render 'cross-sell' %}
+
+

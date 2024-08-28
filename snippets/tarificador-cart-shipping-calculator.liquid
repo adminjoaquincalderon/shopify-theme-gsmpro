@@ -1,0 +1,186 @@
+<div id="tarificadorCartShippingCalculatorWrapper" class="hidden" style="display: flex; flex-direction: column">
+    <h4 style="margin: 0;font-size: 16px;font-weight: 700;margin-bottom: 10px;text-transform: none;">Selecciona la comuna de envío o elige Las Condes para retiro en tienda:</h4>
+    <div style="display: flex; flex-direction: column">
+        <select id="provincesInput">
+            <option value="">Cargando...</option>
+        </select>
+        <select class="hidden" id="citiesInput">
+            <option value="">Debe seleccionar una región</option>
+        </select>
+
+        <div id="shippingEstimatePrice"></div>
+    </div>
+</div>
+
+<style>
+    #provincesInput,
+    #citiesInput {
+        border: 1px solid #dcdcdc;
+    }
+
+    .hidden {
+        visibility: hidden;
+    }
+
+    #shippingEstimatePrice div:nth-child(2) {
+        color: green;
+        font-weight: bold;
+    }
+</style>
+
+<script>
+	window.HACIENDOLA = window.HACIENDOLA || {};
+	window.HACIENDOLA.TARIFICADOR = window.HACIENDOLA.TARIFICADOR || {};
+	window.HACIENDOLA.TARIFICADOR.shopUrl = '{{shop.permanent_domain}}';
+	// ACÁ ES IMPORTANTE PONER EL VALOR DEL ID DEL ELEMENTO HTML Q CORRESPONDE AL BOTÓN DE IR AL CHECKOUT
+	// POR LO GENERAL ES EL <input type="submit">
+	window.HACIENDOLA.TARIFICADOR.goToCheckoutButtonName = 'checkout';
+	window.HACIENDOLA.TARIFICADOR.cartCheckoutFormId = 'cart_form';
+	window.HACIENDOLA.TARIFICADOR.forceSelection = true;
+	window.HACIENDOLA.TARIFICADOR.showRates = true;
+    window.HACIENDOLA.TARIFICADOR.personalize = () => {}
+	window.HACIENDOLA.TARIFICADOR.regionsWithCommunes = [];
+	window.HACIENDOLA.TARIFICADOR.lastRates = [];
+	window.HACIENDOLA.TARIFICADOR.ignoredRatesCode = [];
+	window.HACIENDOLA.TARIFICADOR.printLastRates = () => console.log(window.HACIENDOLA.TARIFICADOR.lastRates);
+
+	// FUNCIONES
+
+	number_format = (amount, decimals) => {
+		amount += '';
+		amount = parseFloat(amount.replace(/[^0-9\.]/g, ''));
+		decimals = decimals || 0;
+		if (isNaN(amount) || amount === 0) return parseFloat(0).toFixed(decimals);
+		amount = '' + amount.toFixed(decimals);
+		const amount_parts = amount.split('.'),
+			regexp = /(\d+)(\d{3})/;
+		while (regexp.test(amount_parts[0])) amount_parts[0] = amount_parts[0].replace(regexp, '$1' + '.' + '$2');
+		return amount_parts.join('.');
+	};
+
+	regionSelectChangeHandler = () => {
+		const comunasSelect = document.getElementById('citiesInput');
+		const selectedRegionShopifyCode = document.getElementById('provincesInput').value;
+		document.getElementById('shippingEstimatePrice').innerHTML = '';
+		comunasSelect.innerHTML = '';
+		console.log(selectedRegionShopifyCode);
+		console.log(window.HACIENDOLA.TARIFICADOR.regionsWithCommunes);
+		const selectedRegion = window.HACIENDOLA.TARIFICADOR.regionsWithCommunes.find(
+			(x) => x.regionShopifyCode === selectedRegionShopifyCode
+		);
+		let htmlCommunes = '<option value="0">Seleccione comuna</option>';
+		selectedRegion.communes.forEach(
+			(x) => (htmlCommunes += '<option value="' + x.communeName + '">' + x.communeName + '</option>')
+		);
+		comunasSelect.innerHTML = htmlCommunes;
+		comunasSelect.classList.remove('hidden');
+	};
+
+	communaSelectChangeHandler = () => {
+      	if(!window.HACIENDOLA.TARIFICADOR.showRates) {
+      		return;
+      	}
+		const cityInput = document.getElementById('citiesInput');
+		const provinceInput = document.getElementById('provincesInput');
+		const cityName = cityInput.options[cityInput.selectedIndex].text;
+		const provinceName = provinceInput.options[provinceInput.selectedIndex].value;
+		document.getElementById(
+			'shippingEstimatePrice'
+		).innerHTML = `<p style="color:#000;">Calculando envío...</span></p>`;
+		fetch(
+			`/cart/shipping_rates.json?shipping_address[city]=${cityName}&shipping_address[country]=Chile&shipping_address[province]=${provinceName}&shipping_address[zip]=CL`
+		)
+			.then((res) => res.json())
+			.then((res) => {
+				if (res.error) {
+					document.getElementById('shippingEstimatePrice').innerHTML =
+						'<p style="margin: 0; font-weight: bold;">' + res.error[0] + '</p>';
+					return;
+				}
+				const rates = res.shipping_rates;
+				window.HACIENDOLA.TARIFICADOR.lastRates = rates;
+				let finalHtml = '';
+				if (rates.length === 0) {
+					document.getElementById(
+						'shippingEstimatePrice'
+					).innerHTML = `<p style="color:#000;">No hay tarifas de envío disponibles para este carrito</p>`;
+				} else {
+					finalHtml = '<p style="margin: 0; font-weight: bold;">Tarifas de envío disponibles: </p>';
+					rates.forEach((rate) => {
+						const ignored =
+							window.HACIENDOLA.TARIFICADOR.ignoredRatesCode.findIndex((x) => x === rate.code) !== -1;
+						if (!ignored) {
+							finalHtml += `
+							<div style="display: flex; justify-content: space-between;">
+								<p style="margin:0">${rate.name}</p>
+								<p style="margin:0">$${number_format(rate.price)}</p>
+							</div>
+						`;
+						}
+					});
+				}
+				document.getElementById('shippingEstimatePrice').innerHTML = finalHtml;
+			});
+	};
+
+	// FIN FUNCIONES
+
+	document.getElementById('citiesInput').addEventListener('change', communaSelectChangeHandler);
+	document.getElementById('provincesInput').addEventListener('change', regionSelectChangeHandler);
+
+	fetch(
+		`https://prod.haciendola.dev/backend/tarificador/api/regions/getShopEnabledRegions/${window.HACIENDOLA.TARIFICADOR.shopUrl}`
+	)
+		.then((response) => response.json())
+		.then((result) => {
+			window.HACIENDOLA.TARIFICADOR.regionsWithCommunes = result;
+      		window.HACIENDOLA.TARIFICADOR.personalize();
+			const htmlRegions = result.reduce(
+				(acc, region) =>
+					acc + '<option value=' + region.regionShopifyCode + '>' + region.regionName + '</option>',
+				'<option value="0">Seleccione región</option>'
+			);
+			document.getElementById('provincesInput').innerHTML = htmlRegions;
+			if (result.length === 1) {
+				document.getElementById('provincesInput').value = result[0].regionShopifyCode;
+				document.getElementById('provincesInput').disabled = true;
+				regionSelectChangeHandler();
+			} else {
+				document.getElementById('provincesInput').classList.remove('hidden');
+			}
+			document.getElementById('tarificadorCartShippingCalculatorWrapper').classList.remove('hidden');
+
+			document
+				.getElementsByName(window.HACIENDOLA.TARIFICADOR.goToCheckoutButtonName)
+				.forEach((checkoutButton) => {
+					checkoutButton.addEventListener('click', (event) => {
+						const selectedCommuneInput = document.getElementById('citiesInput');
+						const selectedProvinceInput = document.getElementById('provincesInput');
+						if (selectedCommuneInput.selectedIndex === 0 && window.HACIENDOLA.TARIFICADOR.forceSelection) {
+							event.stopPropagation();
+							event.preventDefault();
+							alert('Debe seleccionar región y comuna de envío');
+							return false;
+						}
+						if (selectedCommuneInput.selectedIndex > 0) {
+							const selectedCommuneText =
+								selectedCommuneInput.options[selectedCommuneInput.selectedIndex].text;
+							const selectedProvinceCode =
+								selectedProvinceInput.options[selectedProvinceInput.selectedIndex].value;
+							document.getElementById(
+								window.HACIENDOLA.TARIFICADOR.cartCheckoutFormId
+							).action = `/cart?checkout[shipping_address][country]=Chile&checkout[shipping_address][province]=${selectedProvinceCode}&checkout[shipping_address][city]=${selectedCommuneText}`;
+							// Referencia https://community.shopify.com/c/Shopify-Design/Cart-Use-permalinks-to-pre-load-the-cart/td-p/613702
+							// Los permalink del carrito de shopify no permiten pasar la región seleccionada (checkout[shipping_address][province]) al checkout )
+						}
+					});
+				});
+		});
+  	// FIX RELOAD AL CAMBIAR QUANTITY
+  	const qtyButtons = document.getElementsByClassName('quantity-selector__button');
+    for(const btn of qtyButtons) {
+      btn.addEventListener('click', () => {
+      	setTimeout(() => location.reload(), 1000);
+	  });
+    }
+</script>

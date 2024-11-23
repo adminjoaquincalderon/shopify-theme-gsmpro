@@ -531,8 +531,7 @@
       },
       "popups": {
         "type": "popups",
-        "settings": {
-        }
+        "settings": {}
       },
       "text-with-icons": {
         "type": "text-with-icons",
@@ -902,7 +901,7 @@
               "button_background": "#4f5558",
               "button_text_color": "#f3f4f4",
               "button_text": "",
-              "link": "shopify://collections/stock-de-productos-en-bodega-de-chile"
+              "link": "shopify://collections/ofertas-diarias-black-friday⚡"
             }
           },
           "166309615805986a49-3": {
@@ -969,8 +968,7 @@
       "855628211100114053": {
         "type": "shopify://apps/klaviyo-email-marketing-sms/blocks/klaviyo-onsite-embed/2632fe16-c075-4321-a88b-50b567f42507",
         "disabled": false,
-        "settings": {
-        }
+        "settings": {}
       },
       "3904256608562662569": {
         "type": "shopify://apps/scala-parcelamentos/blocks/parcelaEmbed2/def817a5-48c7-43b3-b8b9-553076d860c7",
@@ -1011,9 +1009,7 @@
           "absolutesize": true,
           "p_paddingTopNew": 8,
           "p_paddingBottom": 0,
-          "hide_list": [
-
-          ],
+          "hide_list": [],
           "hide_all": false
         }
       },
@@ -1061,26 +1057,22 @@
       "uppromote-affiliate-referral-customer-referral-91289-64c32457-930d-4cb9-9641-e24c0d9cf1f4": {
         "type": "shopify://apps/uppromote-affiliate-referral/blocks/customer-referral/64c32457-930d-4cb9-9641-e24c0d9cf1f4",
         "disabled": true,
-        "settings": {
-        }
+        "settings": {}
       },
       "uppromote-affiliate-referral-message-bar-91289-64c32457-930d-4cb9-9641-e24c0d9cf1f4": {
         "type": "shopify://apps/uppromote-affiliate-referral/blocks/message-bar/64c32457-930d-4cb9-9641-e24c0d9cf1f4",
         "disabled": true,
-        "settings": {
-        }
+        "settings": {}
       },
       "16278478101612877664": {
         "type": "shopify://apps/pagefly-page-builder/blocks/app-embed/83e179f7-59a0-4589-8c66-c0dddf959200",
         "disabled": false,
-        "settings": {
-        }
+        "settings": {}
       },
       "18117893244055972010": {
         "type": "shopify://apps/amai-preorder-manager-notify/blocks/app-embed-block/7053ce2a-18da-4e24-98b3-3fdd20b313e7",
         "disabled": false,
-        "settings": {
-        }
+        "settings": {}
       },
       "8962992520437913685": {
         "type": "shopify://apps/yotpo-loyalty-rewards/blocks/loader-app-embed-block/2f9660df-5018-4e02-9868-ee1fb88d6ccd",
@@ -1100,8 +1092,7 @@
       "7570552984445421165": {
         "type": "shopify://apps/yotpo-product-photo-reviews/blocks/settings/eb7dfd7d-db44-4334-bc49-c893b51b36cf",
         "disabled": false,
-        "settings": {
-        }
+        "settings": {}
       },
       "15683396631634586217": {
         "type": "shopify://apps/inbox/blocks/chat/841fc607-4181-4ad1-842d-e24d7f8bad6b",
@@ -1118,26 +1109,22 @@
       "16216491870256628967": {
         "type": "shopify://apps/bss-labels-badges/blocks/bss-pl-config-data/91bfe765-b604-49a1-805e-3599fa600b24",
         "disabled": false,
-        "settings": {
-        }
+        "settings": {}
       },
       "6406956604159796213": {
         "type": "shopify://apps/smartseo/blocks/smartseo/7b0a6064-ca2e-4392-9a1d-8c43c942357b",
         "disabled": false,
-        "settings": {
-        }
+        "settings": {}
       },
       "4976129024724438625": {
         "type": "shopify://apps/smartseo/blocks/brokenLinkDetection/7b0a6064-ca2e-4392-9a1d-8c43c942357b",
         "disabled": false,
-        "settings": {
-        }
+        "settings": {}
       },
       "5822432907971180753": {
         "type": "shopify://apps/bundle-bear/blocks/widget/8301eac6-7eb6-487c-92f6-ccde92f1db50",
         "disabled": false,
-        "settings": {
-        }
+        "settings": {}
       }
     }
   },
@@ -1412,8 +1399,7 @@
         },
         "product-recommendations": {
           "type": "product-recommendations",
-          "settings": {
-          }
+          "settings": {}
         },
         "announcement-bar": {
           "type": "announcement-bar",
@@ -1704,8 +1690,7 @@
         },
         "product-recommendations": {
           "type": "product-recommendations",
-          "settings": {
-          }
+          "settings": {}
         },
         "announcement-bar": {
           "type": "announcement-bar",

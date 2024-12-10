@@ -901,7 +901,7 @@
               "button_background": "#4f5558",
               "button_text_color": "#f3f4f4",
               "button_text": "",
-              "link": "shopify://collections/ofertas-diarias-black-friday⚡"
+              "link": "shopify://collections/productos-con-entrega-inmediata⚡"
             }
           },
           "166309615805986a49-3": {
@@ -1053,16 +1053,6 @@
           "cart_inline": 0,
           "hide": false
         }
-      },
-      "uppromote-affiliate-referral-customer-referral-91289-64c32457-930d-4cb9-9641-e24c0d9cf1f4": {
-        "type": "shopify://apps/uppromote-affiliate-referral/blocks/customer-referral/64c32457-930d-4cb9-9641-e24c0d9cf1f4",
-        "disabled": true,
-        "settings": {}
-      },
-      "uppromote-affiliate-referral-message-bar-91289-64c32457-930d-4cb9-9641-e24c0d9cf1f4": {
-        "type": "shopify://apps/uppromote-affiliate-referral/blocks/message-bar/64c32457-930d-4cb9-9641-e24c0d9cf1f4",
-        "disabled": true,
-        "settings": {}
       },
       "16278478101612877664": {
         "type": "shopify://apps/pagefly-page-builder/blocks/app-embed/83e179f7-59a0-4589-8c66-c0dddf959200",
